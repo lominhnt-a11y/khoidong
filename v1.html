@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quiz Lượng Giác — 6 Gói</title>
+<style>
+  :root{
+    --bg1:#0f2027; --bg2:#203a43; --bg3:#2c5364;
+    --text:#ffffff; --muted:rgba(255,255,255,0.75); --accent:#ffd166;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial}
+  body{background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3)); color:var(--text); -webkit-font-smoothing:antialiased;}
+  .app{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
+  .stage{width:100%;height:100%;}
+  /* MENU */
+  .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:20px;height:100%;align-content:center}
+  .pack-btn{padding:28px;border-radius:16px;color:#fff;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,0.45);transition:transform .12s;border:4px solid rgba(255,255,255,0.04)}
+  .pack-btn:hover{transform:translateY(-6px)}
+  .p1{background:linear-gradient(135deg,#0077b6,#00b4d8)}
+  .p2{background:linear-gradient(135deg,#2b9348,#55a630)}
+  .p3{background:linear-gradient(135deg,#ff7b00,#ffb703)}
+  .p4{background:linear-gradient(135deg,#8b1e3f,#c9184a)}
+  .p5{background:linear-gradient(135deg,#6f42c1,#a78bfa)}
+  .p6{background:linear-gradient(135deg,#1e293b,#0ea5a4)}
+  .pack-title{font-size:28px;font-weight:800;margin-bottom:6px}
+  .pack-desc{font-size:15px;opacity:0.95}
+  /* QUIZ */
+  .quiz-wrap{display:flex;flex-direction:column;height:100%}
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 28px}
+  .pack-name{font-size:20px;font-weight:800}
+  .qcount{font-size:16px;color:var(--muted)}
+  .score{font-size:20px;font-weight:900;color:var(--accent)}
+  .timer{font-size:36px;font-weight:900;background:rgba(255,255,255,0.06);padding:8px 18px;border-radius:12px}
+  .question-card{margin:8px auto; width:95%; max-width:1100px; background:rgba(255,255,255,0.04); padding:30px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5)}
+  .question-text{font-size:42px;font-weight:800;line-height:1.15}
+  .options-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+  .option{display:flex;gap:14px;align-items:center;padding:18px;border-radius:12px;font-size:22px;cursor:pointer;border:3px solid rgba(255,255,255,0.04);transition:transform .12s,box-shadow .12s}
+  .option:hover{transform:translateY(-6px);box-shadow:0 12px 28px rgba(0,0,0,0.35)}
+  .opt-label{width:64px;height:64px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900}
+  .opt-text{flex:1}
+  .opt-a{background:linear-gradient(90deg,#bde0fe,#9bd0fe);color:#012a4a}
+  .opt-b{background:linear-gradient(90deg,#ffd8a8,#ffc078);color:#4a2d00}
+  .opt-c{background:linear-gradient(90deg,#e7c6ff,#d5a6ff);color:#2b0032}
+  .opt-d{background:linear-gradient(90deg,#ffdbe0,#ffc6c6);color:#3b0000}
+  .option.correct{outline:5px solid rgba(34,197,94,0.95);box-shadow:0 14px 36px rgba(34,197,94,0.12)}
+  .option.wrong{outline:5px solid rgba(239,68,68,0.95);box-shadow:0 14px 36px rgba(239,68,68,0.12)}
+  .controls{display:flex;justify-content:space-between;align-items:center;padding:12px 28px}
+  .small-btn{background:rgba(255,255,255,0.06);color:var(--text);border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
+  /* RESULT FULLSCREEN */
+  .result-screen{position:fixed;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;background:linear-gradient(90deg,rgba(0,0,0,0.5),rgba(0,0,0,0.75));z-index:90;visibility:hidden;opacity:0;transform:scale(0.98);transition:all .25s}
+  .result-screen.show{visibility:visible;opacity:1;transform:scale(1)}
+  .final-score{font-size:160px;font-weight:900;color:var(--accent);text-shadow:0 18px 50px rgba(0,0,0,0.6);line-height:0.9}
+  .final-sub{font-size:26px;color:var(--muted)}
+  .result-actions{display:flex;gap:12px;margin-top:8px}
+  .action-btn{padding:14px 22px;border-radius:12px;border:none;font-size:18px;cursor:pointer}
+  .home-btn{background:#fff;color:#111;font-weight:800}
+  .replay-btn{background:var(--accent);color:#111;font-weight:800}
+  canvas#confetti{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:95}
+  @media(max-width:900px){
+    .menu{grid-template-columns:repeat(2,1fr)}
+    .question-text{font-size:28px}
+    .final-score{font-size:72px}
+    .opt-label{width:48px;height:48px}
+    .option{font-size:16px;padding:12px}
+  }
+</style>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="app"><div class="stage">
+
+  <div id="menu" class="menu">
+    <div class="pack-btn p1" onclick="startPack(0)"><div class="pack-title">Gói 1</div><div class="pack-desc">Cơ bản & Công thức cộng</div></div>
+    <div class="pack-btn p2" onclick="startPack(1)"><div class="pack-title">Gói 2</div><div class="pack-desc">Công thức cộng & Nhân đôi</div></div>
+    <div class="pack-btn p3" onclick="startPack(2)"><div class="pack-title">Gói 3</div><div class="pack-desc">Góc liên hệ & Hạ bậc</div></div>
+    <div class="pack-btn p4" onclick="startPack(3)"><div class="pack-title">Gói 4</div><div class="pack-desc">Tổng→Tích & Ứng dụng</div></div>
+    <div class="pack-btn p5" onclick="startPack(4)"><div class="pack-title">Gói 5</div><div class="pack-desc">Phiên bản đảo & Đơn giản</div></div>
+    <div class="pack-btn p6" onclick="startPack(5)"><div class="pack-title">Gói 6</div><div class="pack-desc">Phiên bản đảo & Đơn giản</div></div>
+  </div>
+
+  <div id="quizScreen" class="quiz-wrap" style="display:none">
+    <div class="topbar">
+      <div>
+        <div class="pack-name" id="packName">Gói 1</div>
+        <div class="qcount" id="qCount">Câu 1 / 10</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:18px">
+        <div class="score">Điểm: <span id="score">0</span></div>
+        <div class="timer" id="timer">10</div>
+      </div>
+    </div>
+
+    <div class="question-card">
+      <div class="question-text" id="questionText">Câu hỏi</div>
+      <div class="options-grid" id="optionsGrid"></div>
+    </div>
+
+    <div class="controls">
+      <button class="small-btn" onclick="skipQuestion()">Bỏ qua</button>
+      <div></div>
+      <button class="small-btn" onclick="endAndShow()">Kết thúc sớm</button>
+    </div>
+  </div>
+
+  <div id="resultScreen" class="result-screen">
+    <canvas id="confetti"></canvas>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="final-sub" id="finalSub">Bạn đã hoàn thành 10/10 câu</div>
+    <div class="result-actions">
+      <button class="action-btn home-btn" onclick="goHome()">Quay lại chọn gói</button>
+      <button class="action-btn replay-btn" onclick="replayPack()">Chơi lại gói này</button>
+    </div>
+  </div>
+
+</div></div>
+
+<audio id="s_correct" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="s_wrong" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="s_tick" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+<audio id="s_win" src="https://actions.google.com/sounds/v1/alarms/medium_double_beep.ogg"></audio>
+
+<script>
+// QUESTIONS: 6 packs x 10 questions (as provided, with group5/6 inverted short form)
+const packs = [
+  // Pack 1
+  [
+    {q:"$$tan x = \\frac{sin x}{?}$$", opts:["$$cos x$$","$$1$$","$$sin x$$","$$cot x$$"], a:0},
+    {q:"$$sin^2 x + cos^2 x = ?$$", opts:["$$0$$","$$1$$","$$sin x$$","$$cos x$$"], a:1},
+    {q:"$$sin(\\pi - x) = ?$$", opts:["$$sin x$$","$$-sin x$$","$$cos x$$","$$-cos x$$"], a:0},
+    {q:"$$cos(\\pi + x) = ?$$", opts:["$$cos x$$","$$-cos x$$","$$sin x$$","$$-sin x$$"], a:1},
+    {q:"$$sin(a+b) = ?$$", opts:["$$sin a + sin b$$","$$sin a cos b + cos a sin b$$","$$sin a cos b - cos a sin b$$","$$cos a cos b - sin a sin b$$"], a:1},
+    {q:"$$cos(a-b) = ?$$", opts:["$$cos a cos b + sin a sin b$$","$$cos a cos b - sin a sin b$$","$$sin a cos b + cos a sin b$$","$$sin a cos b - cos a sin b$$"], a:0},
+    {q:"$$sin(2x) = ?$$", opts:["$$2 sin x cos x$$","$$sin^2 x + cos^2 x$$","$$cos^2 x - sin^2 x$$","$$\\frac{2 tan x}{1+tan^2 x}$$"], a:0},
+    {q:"$$sin^2 x = \\frac{1 - cos 2x}{?}$$", opts:["$$1$$","$$2$$","$$3$$","$$4$$"], a:1},
+    {q:"$$tan(a+b) = ?$$", opts:["$$\\frac{tan a + tan b}{1 - tan a tan b}$$","$$\\frac{tan a - tan b}{1 + tan a tan b}$$","$$tan a + tan b$$","$$tan a tan b$$"], a:0},
+    {q:"$$sin a + sin b = ?$$", opts:["$$2 sin(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$","$$2 cos(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$","$$2 sin(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$","$$2 cos(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$"], a:0}
+  ],
+  // Pack 2
+  [
+    {q:"$$cot x = \\frac{?}{sin x}$$", opts:["$$cos x$$","$$1$$","$$tan x$$","$$sin x$$"], a:0},
+    {q:"$$\\frac{sin x}{cos x} = ?$$", opts:["$$cot x$$","$$tan x$$","$$1$$","$$0$$"], a:1},
+    {q:"$$cos(\\pi - x) = ?$$", opts:["$$cos x$$","$$-cos x$$","$$sin x$$","$$-sin x$$"], a:0},
+    {q:"$$tan(\\pi + x) = ?$$", opts:["$$tan x$$","$$-tan x$$","$$cot x$$","$$-cot x$$"], a:0},
+    {q:"$$sin(a-b) = ?$$", opts:["$$sin a cos b - cos a sin b$$","$$sin a cos b + cos a sin b$$","$$cos a cos b - sin a sin b$$","$$cos a cos b + sin a sin b$$"], a:0},
+    {q:"$$cos(a+b) = ?$$", opts:["$$cos a cos b - sin a sin b$$","$$cos a cos b + sin a sin b$$","$$sin a cos b + cos a sin b$$","$$sin a cos b - cos a sin b$$"], a:0},
+    {q:"$$cos(2x) = ?$$", opts:["$$cos^2 x - sin^2 x$$","$$2 cos^2 x - 1$$","$$1 - 2 sin^2 x$$","Tất cả A,B,C đúng"], a:3},
+    {q:"$$cos^2 x = \\frac{1 + cos 2x}{?}$$", opts:["$$1$$","$$2$$","$$3$$","$$4$$"], a:1},
+    {q:"$$tan(a-b) = ?$$", opts:["$$\\frac{tan a - tan b}{1 + tan a tan b}$$","$$\\frac{tan a + tan b}{1 - tan a tan b}$$","$$tan a - tan b$$","$$tan a tan b$$"], a:0},
+    {q:"$$cos a + cos b = ?$$", opts:["$$2 cos(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$","$$2 sin(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$","$$2 cos(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$","$$2 sin(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$"], a:0}
+  ],
+  // Pack 3
+  [
+    {q:"$$sin(-x) = ?$$", opts:["$$-sin x$$","$$sin x$$","$$cos x$$","$$-cos x$$"], a:0},
+    {q:"$$cos(-x) = ?$$", opts:["$$cos x$$","$$-cos x$$","$$sin x$$","$$-sin x$$"], a:0},
+    {q:"$$sin(\\frac{\\pi}{2} - x) = ?$$", opts:["$$sin x$$","$$cos x$$","$$-cos x$$","$$-sin x$$"], a:1},
+    {q:"$$cos(\\frac{\\pi}{2} - x) = ?$$", opts:["$$sin x$$","$$cos x$$","$$-sin x$$","$$-cos x$$"], a:0},
+    {q:"$$cos(a-b) = ?$$", opts:["$$cos a cos b + sin a sin b$$","$$cos a cos b - sin a sin b$$","$$sin a cos b - cos a sin b$$","$$sin a cos b + cos a sin b$$"], a:0},
+    {q:"$$sin(a+b) = ?$$", opts:["$$sin a cos b + cos a sin b$$","$$sin a cos b - cos a sin b$$","$$cos a cos b - sin a sin b$$","$$cos a cos b + sin a sin b$$"], a:0},
+    {q:"$$tan(2x) = ?$$", opts:["$$\\frac{2 tan x}{1 - tan^2 x}$$","$$\\frac{2 tan x}{1 + tan^2 x}$$","$$2 tan x$$","$$tan^2 x - 1$$"], a:0},
+    {q:"$$cos^2(\\frac{x}{2}) = \\frac{1 + cos x}{?}$$", opts:["$$1$$","$$2$$","$$3$$","$$4$$"], a:1},
+    {q:"$$sin(2a) = ?$$", opts:["$$2 sin a cos a$$","$$cos^2 a - sin^2 a$$","$$sin^2 a + cos^2 a$$","$$tan a + cot a$$"], a:0},
+    {q:"$$sin a - sin b = ?$$", opts:["$$2 cos(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$","$$2 sin(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$","$$-2 sin(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$","$$-2 cos(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$"], a:0}
+  ],
+  // Pack 4
+  [
+    {q:"$$tan(\\frac{\\pi}{4}) = ?$$", opts:["$$0$$","$$1$$","$$\\sqrt{3}$$","$$\\frac{1}{\\sqrt{3}}$$"], a:1},
+    {q:"$$cos^2 x - sin^2 x = ?$$", opts:["$$cos 2x$$","$$sin 2x$$","$$tan 2x$$","$$cot 2x$$"], a:0},
+    {q:"$$sin(2\\pi - x) = ?$$", opts:["$$sin x$$","$$-sin x$$","$$cos x$$","$$-cos x$$"], a:0},
+    {q:"$$cos(2\\pi - x) = ?$$", opts:["$$cos x$$","$$-cos x$$","$$sin x$$","$$-sin x$$"], a:0},
+    {q:"$$cos(a+b) = ?$$", opts:["$$cos a cos b - sin a sin b$$","$$cos a cos b + sin a sin b$$","$$sin a cos b - cos a sin b$$","$$sin a cos b + cos a sin b$$"], a:0},
+    {q:"$$sin(a-b) = ?$$", opts:["$$sin a cos b - cos a sin b$$","$$sin a cos b + cos a sin b$$","$$cos a cos b - sin a sin b$$","$$cos a cos b + sin a sin b$$"], a:0},
+    {q:"$$cos(2a) = ?$$", opts:["$$1 - 2 sin^2 a$$","$$2 cos^2 a - 1$$","$$cos^2 a - sin^2 a$$","Tất cả A,B,C đúng"], a:3},
+    {q:"$$sin^2(\\frac{x}{2}) = \\frac{1 - cos x}{?}$$", opts:["$$1$$","$$2$$","$$3$$","$$4$$"], a:1},
+    {q:"$$tan(a+b) = ?$$", opts:["$$\\frac{tan a + tan b}{1 - tan a tan b}$$","$$\\frac{tan a - tan b}{1 + tan a tan b}$$","$$tan a + tan b$$","$$tan a tan b$$"], a:0},
+    {q:"$$cos a - cos b = ?$$", opts:["$$-2 sin(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$","$$2 cos(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$","$$2 sin(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$","$$-2 cos(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$"], a:0}
+  ],
+  // Pack 5 (inverted short form)
+  [
+    {q:"$$\\frac{sin x}{cos x} = ?$$", opts:["$$tan x$$","$$cot x$$","$$cos x$$","$$1$$"], a:0},
+    {q:"$$\\frac{cos x}{sin x} = ?$$", opts:["$$cot x$$","$$tan x$$","$$cos x$$","$$1$$"], a:0},
+    {q:"$$sin(\\pi + x) = ?$$", opts:["$$sin x$$","$$-sin x$$","$$cos x$$","$$-cos x$$"], a:1},
+    {q:"$$cos(\\pi + x) = ?$$", opts:["$$cos x$$","$$-cos x$$","$$sin x$$","$$-sin x$$"], a:1},
+    {q:"$$sin a cos b + cos a sin b = ?$$", opts:["$$sin(a+b)$$","$$sin(a-b)$$","$$cos(a+b)$$","$$cos(a-b)$$"], a:0},
+    {q:"$$cos a cos b - sin a sin b = ?$$", opts:["$$cos(a+b)$$","$$cos(a-b)$$","$$sin(a+b)$$","$$sin(a-b)$$"], a:0},
+    {q:"$$2 sin x cos x = ?$$", opts:["$$sin 2x$$","$$cos 2x$$","$$tan 2x$$","$$1$$"], a:0},
+    {q:"$$2 cos^2 x - 1 = ?$$", opts:["$$cos 2x$$","$$sin 2x$$","$$tan 2x$$","$$1$$"], a:0},
+    {q:"$$\\frac{tan a + tan b}{1 - tan a tan b} = ?$$", opts:["$$tan(a+b)$$","$$tan(a-b)$$","$$cot(a+b)$$","$$cot(a-b)$$"], a:0},
+    {q:"$$\\frac{sin(a+b)+sin(a-b)}{2} = ?$$", opts:["$$sin a cos b$$","$$cos a sin b$$","$$cos a cos b$$","$$sin a sin b$$"], a:0}
+  ],
+  // Pack 6 (inverted short form)
+  [
+    {q:"$$\\frac{1 - cos 2x}{2} = ?$$", opts:["$$sin^2 x$$","$$cos^2 x$$","$$sin 2x$$","$$cos 2x$$"], a:0},
+    {q:"$$\\frac{1 + cos 2x}{2} = ?$$", opts:["$$cos^2 x$$","$$sin^2 x$$","$$tan^2 x$$","$$cot^2 x$$"], a:0},
+    {q:"$$sin(\\frac{\\pi}{2} + x) = ?$$", opts:["$$sin x$$","$$cos x$$","$$-cos x$$","$$-sin x$$"], a:2},
+    {q:"$$cos(\\frac{\\pi}{2} + x) = ?$$", opts:["$$cos x$$","$$-sin x$$","$$-cos x$$","$$sin x$$"], a:1},
+    {q:"$$sin a cos b - cos a sin b = ?$$", opts:["$$sin(a-b)$$","$$sin(a+b)$$","$$cos(a+b)$$","$$cos(a-b)$$"], a:0},
+    {q:"$$cos a cos b + sin a sin b = ?$$", opts:["$$cos(a-b)$$","$$cos(a+b)$$","$$sin(a+b)$$","$$sin(a-b)$$"], a:0},
+    {q:"$$\\frac{1 - cos x}{2} = ?$$", opts:["$$sin^2(\\frac{x}{2})$$","$$cos^2(\\frac{x}{2})$$","$$tan^2(\\frac{x}{2})$$","$$cot^2(\\frac{x}{2})$$"], a:0},
+    {q:"$$\\frac{1 + cos x}{2} = ?$$", opts:["$$cos^2(\\frac{x}{2})$$","$$sin^2(\\frac{x}{2})$$","$$tan^2(\\frac{x}{2})$$","$$cot^2(\\frac{x}{2})$$"], a:0},
+    {q:"$$\\frac{tan a - tan b}{1 + tan a tan b} = ?$$", opts:["$$tan(a-b)$$","$$tan(a+b)$$","$$cot(a-b)$$","$$cot(a+b)$$"], a:0},
+    {q:"$$\\frac{sin 2x}{2} = ?$$", opts:["$$sin x cos x$$","$$cos^2 x$$","$$sin^2 x$$","$$tan^2 x$$"], a:0}
+  ]
+];
+
+// state
+let currentPack = null, qIndex = 0, score = 0, timeLeft=10, timerId=null;
+const TIME_PER_Q = 10;
+
+// UI refs
+const menuEl = document.getElementById('menu');
+const quizEl = document.getElementById('quizScreen');
+const packNameEl = document.getElementById('packName');
+const qCountEl = document.getElementById('qCount');
+const questionTextEl = document.getElementById('questionText');
+const optionsGridEl = document.getElementById('optionsGrid');
+const timerEl = document.getElementById('timer');
+const scoreEl = document.getElementById('score');
+const resultScreen = document.getElementById('resultScreen');
+const finalScoreEl = document.getElementById('finalScore');
+const finalSubEl = document.getElementById('finalSub');
+
+const s_correct = document.getElementById('s_correct');
+const s_wrong = document.getElementById('s_wrong');
+const s_tick = document.getElementById('s_tick');
+const s_win = document.getElementById('s_win');
+
+// confetti canvas
+const confettiCanvas = document.getElementById('confetti');
+confettiCanvas.width = window.innerWidth;
+confettiCanvas.height = window.innerHeight;
+const ctx = confettiCanvas.getContext('2d');
+let confettiPieces = [], confAnim = null;
+
+function launchConfetti(){
+  confettiPieces = [];
+  const count = 140;
+  for(let i=0;i<count;i++){
+    confettiPieces.push({
+      x: Math.random()*confettiCanvas.width,
+      y: -Math.random()*confettiCanvas.height,
+      dx: (Math.random()-0.5)*6,
+      dy: 2+Math.random()*6,
+      size: 6+Math.random()*10,
+      color: ['#ffd166','#06d6a0','#ef476f','#118ab2','#800080'][Math.floor(Math.random()*5)],
+      rot: Math.random()*360,
+      speed: 1+Math.random()*3
+    });
+  }
+  animateConfetti();
+}
+function animateConfetti(){
+  cancelAnimationFrame(confAnim);
+  ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  confettiPieces.forEach(p=>{
+    p.x += p.dx * p.speed;
+    p.y += p.dy * p.speed;
+    p.rot += p.dx;
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(p.rot*0.01745);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+    ctx.restore();
+  });
+  confettiPieces = confettiPieces.filter(p=>p.y < confettiCanvas.height+50);
+  if(confettiPieces.length>0) confAnim = requestAnimationFrame(animateConfetti);
+  else ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+}
+
+// start pack
+function startPack(i){
+  currentPack = i; qIndex=0; score=0;
+  scoreEl.textContent = score;
+  packNameEl.textContent = `Gói ${i+1}`;
+  menuEl.style.display = 'none';
+  quizEl.style.display = 'flex';
+  resultScreen.classList.remove('show');
+  loadQuestion();
+}
+
+// load question
+function loadQuestion(){
+  clearInterval(timerId);
+  timeLeft = TIME_PER_Q;
+  timerEl.textContent = timeLeft;
+  const set = packs[currentPack];
+  if(!set || qIndex >= set.length){ showResult(); return; }
+  const q = set[qIndex];
+  qCountEl.textContent = `Câu ${qIndex+1} / ${set.length}`;
+  questionTextEl.textContent = q.q;
+  optionsGridEl.innerHTML = '';
+  q.opts.forEach((opt, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'option';
+    const label = document.createElement('div');
+    label.className = 'opt-label ' + (idx===0?'opt-a':idx===1?'opt-b':idx===2?'opt-c':'opt-d');
+    label.textContent = String.fromCharCode(65+idx);
+    const txt = document.createElement('div');
+    txt.className = 'opt-text';
+    txt.textContent = opt;
+    div.appendChild(label); div.appendChild(txt);
+    div.onclick = ()=>selectOption(idx, div);
+    optionsGridEl.appendChild(div);
+  });
+  // countdown
+  timerId = setInterval(()=>{
+    timeLeft--;
+    if(timeLeft <= 3){ try{ s_tick.currentTime=0; s_tick.play(); }catch(e){} }
+    timerEl.textContent = timeLeft;
+    if(timeLeft <= 0){ clearInterval(timerId); markTimeout(); }
+  },1000);
+}
+
+// select
+function selectOption(idx, el){
+  clearInterval(timerId);
+  const q = packs[currentPack][qIndex];
+  const opts = Array.from(optionsGridEl.children);
+  opts.forEach(o=>o.onclick=null);
+  if(idx === q.a){
+    el.classList.add('correct'); score += 10; scoreEl.textContent = score;
+    try{ s_correct.currentTime=0; s_correct.play(); }catch(e){}
+  } else {
+    el.classList.add('wrong'); try{ s_wrong.currentTime=0; s_wrong.play(); }catch(e){}
+    const correctEl = opts[q.a]; if(correctEl) correctEl.classList.add('correct');
+  }
+  setTimeout(()=>{ qIndex++; loadQuestion(); },700);
+}
+
+// timeout
+function markTimeout(){
+  const opts = Array.from(optionsGridEl.children);
+  opts.forEach(o=>o.onclick=null);
+  const q = packs[currentPack][qIndex];
+  const correctEl = opts[q.a]; if(correctEl) correctEl.classList.add('correct');
+  try{ s_wrong.currentTime=0; s_wrong.play(); }catch(e){}
+  setTimeout(()=>{ qIndex++; loadQuestion(); },700);
+}
+
+function skipQuestion(){ clearInterval(timerId); markTimeout(); }
+function endAndShow(){ clearInterval(timerId); showResult(); }
+
+function showResult(){
+  clearInterval(timerId);
+  quizEl.style.display = 'none';
+  finalScoreEl.textContent = score;
+  finalSubEl.textContent = `Bạn hoàn thành ${Math.min(packs[currentPack].length, qIndex)} / ${packs[currentPack].length} câu`;
+  resultScreen.classList.add('show');
+  try{ s_win.currentTime=0; s_win.play(); }catch(e){}
+  launchConfetti();
+}
+
+function replayPack(){ resultScreen.classList.remove('show'); setTimeout(()=>startPack(currentPack),200); }
+function goHome(){ resultScreen.classList.remove('show'); quizEl.style.display='none'; menuEl.style.display='grid'; }
+
+// resize confetti
+window.addEventListener('resize', ()=>{ confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; });
+
+</script>
+</body>
+</html>
