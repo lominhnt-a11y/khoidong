@@ -171,7 +171,7 @@ const packs = [
     {q:"$$cos(a+b) = ?$$", opts:["$$cos a cos b - sin a sin b$$","$$cos a cos b + sin a sin b$$","$$sin a cos b - cos a sin b$$","$$sin a cos b + cos a sin b$$"], a:0},
     {q:"$$sin(a-b) = ?$$", opts:["$$sin a cos b - cos a sin b$$","$$sin a cos b + cos a sin b$$","$$cos a cos b - sin a sin b$$","$$cos a cos b + sin a sin b$$"], a:0},
     {q:"$$cos(2a) = ?$$", opts:["$$1 - 2 sin^2 a$$","$$2 cos^2 a - 1$$","$$cos^2 a - sin^2 a$$","Tất cả A,B,C đúng"], a:3},
-    {q:"$$sin^2(x/2) = (1 - cos x) / ?$$", opts:["$$1$$","$$2$$","$$3$$","$$4$$"], a:1},
+    {q:"$$sin^2(\\frac{x}{2}) = \\frac{1 - cos x}{?}$$", opts:["$$1$$","$$2$$","$$3$$","$$4$$"], a:1},
     {q:"$$tan(a+b) = ?$$", opts:["$$\\frac{tan a + tan b}{1 - tan a tan b}$$","$$\\frac{tan a - tan b}{1 + tan a tan b}$$","$$tan a + tan b$$","$$tan a tan b$$"], a:0},
     {q:"$$cos a - cos b = ?$$", opts:["$$-2 sin(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$","$$2 cos(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$","$$2 sin(\\frac{a+b}{2}) cos(\\frac{a-b}{2})$$","$$-2 cos(\\frac{a+b}{2}) sin(\\frac{a-b}{2})$$"], a:0}
   ],
@@ -279,6 +279,7 @@ function startPack(i){
   loadQuestion();
 }
 
+
 // load question
 function loadQuestion(){
   clearInterval(timerId);
@@ -286,6 +287,40 @@ function loadQuestion(){
   timerEl.textContent = timeLeft;
   const set = packs[currentPack];
   if(!set || qIndex >= set.length){ showResult(); return; }
+  const q = set[qIndex];
+  qCountEl.textContent = `Câu ${qIndex+1} / ${set.length}`;
+
+  // hiển thị công thức bằng innerHTML
+  questionTextEl.innerHTML = q.q;
+  optionsGridEl.innerHTML = '';
+  q.opts.forEach((opt, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'option';
+    const label = document.createElement('div');
+    label.className = 'opt-label ' + (idx===0?'opt-a':idx===1?'opt-b':idx===2?'opt-c':'opt-d');
+    label.textContent = String.fromCharCode(65+idx);
+    const txt = document.createElement('div');
+    txt.className = 'opt-text';
+    txt.innerHTML = opt;   // sửa ở đây
+    div.appendChild(label); 
+    div.appendChild(txt);
+    div.onclick = ()=>selectOption(idx, div);
+    optionsGridEl.appendChild(div);
+  });
+
+  // gọi MathJax render lại
+  if (window.MathJax) {
+    MathJax.typesetPromise();
+  }
+
+  // countdown
+  timerId = setInterval(()=>{
+    timeLeft--;
+    if(timeLeft <= 3){ try{ s_tick.currentTime=0; s_tick.play(); }catch(e){} }
+    timerEl.textContent = timeLeft;
+    if(timeLeft <= 0){ clearInterval(timerId); markTimeout(); }
+  },1000);
+}
   const q = set[qIndex];
   qCountEl.textContent = `Câu ${qIndex+1} / ${set.length}`;
   questionTextEl.textContent = q.q;
